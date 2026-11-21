@@ -135,10 +135,29 @@ VITE_SOCKET_URL=http://localhost:5000
 
 ---
 
+## 👥 Demo Test Accounts
+
+The database includes pre-configured accounts across all user roles:
+
+| Role | Email | Password | Details |
+| :--- | :--- | :--- | :--- |
+| **Administrator** | `admin@terrafresh.com` | `admin123` | Full access to command center, live monitor, verification |
+| **Farmer (Verified)** | `rajesh@farm.com` | `password123` | Active farm profile, live listings, and earnings |
+| **Farmer (Pending KYC)** | `suresh@farm.com` | `password123` | For testing Admin KYC approval/rejection workflows |
+| **Consumer** | `consumer@terrafresh.com` | `password123` | Shopping cart, checkout, bidding, and order history |
+
+To reset and re-seed the database at any time:
+```bash
+cd backend
+npm run seed
+```
+
+---
+
 ## 🗺️ Project Execution Roadmap
 
 - [x] **Phase 0: Workspace Setup, Git Repository Initialization & Hygiene**
-- [ ] **Phase 1: Database Schema Modernization & Seed Data Engine**
+- [x] **Phase 1: Database Schema Modernization & Seed Data Engine**
 - [ ] **Phase 2: Security, Authentication & Role-Based Access Control (RBAC)**
 - [ ] **Phase 3: Dynamic Product Catalog & Farmer Inventory Management**
 - [ ] **Phase 4: Real-Time Auction & Live Bidding Engine**

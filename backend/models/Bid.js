@@ -1,24 +1,29 @@
 import mongoose from "mongoose";
 
-const bidSchema = new mongoose.Schema({
+const bidSchema = new mongoose.Schema(
+  {
     auction: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Auction",
-        required: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Auction",
+      required: true,
+      index: true,
     },
     bidder: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
     amount: {
-        type: Number,
-        required: true,
+      type: Number,
+      required: true,
+      min: 0,
     },
     timestamp: {
-        type: Date,
-        default: Date.now,
+      type: Date,
+      default: Date.now,
     },
-});
+  },
+  { timestamps: true }
+);
 
 export default mongoose.model("Bid", bidSchema);

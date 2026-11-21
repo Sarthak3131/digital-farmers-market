@@ -1,48 +1,72 @@
 import mongoose from "mongoose";
 
-const orderSchema = new mongoose.Schema({
+const orderSchema = new mongoose.Schema(
+  {
     buyer: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
     items: [
-        {
-            product: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
-            auction: { type: mongoose.Schema.Types.ObjectId, ref: "Auction" },
-            name: { type: String, required: true },
-            quantity: { type: Number, required: true },
-            price: { type: Number, required: true },
-            image: { type: String }
-        }
+      {
+        product: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
+        auction: { type: mongoose.Schema.Types.ObjectId, ref: "Auction" },
+        name: { type: String, required: true },
+        quantity: { type: Number, required: true, default: 1 },
+        price: { type: Number, required: true },
+        image: { type: String },
+        unit: { type: String, default: "kg" },
+      },
     ],
+    subtotal: {
+      type: Number,
+      default: 0,
+    },
+    tax: {
+      type: Number,
+      default: 0,
+    },
+    deliveryFee: {
+      type: Number,
+      default: 0,
+    },
+    platformFee: {
+      type: Number,
+      default: 0,
+    },
     totalAmount: {
-        type: Number,
-        required: true
+      type: Number,
+      required: true,
     },
     shippingAddress: {
-        name: String,
-        phone: String,
-        email: String,
-        address: String,
-        city: String,
-        pincode: String,
-        instructions: String
+      name: { type: String, default: "" },
+      phone: { type: String, default: "" },
+      email: { type: String, default: "" },
+      address: { type: String, default: "" },
+      city: { type: String, default: "" },
+      state: { type: String, default: "" },
+      pincode: { type: String, default: "" },
+      instructions: { type: String, default: "" },
     },
     status: {
-        type: String,
-        enum: ["pending", "processing", "shipped", "delivered", "cancelled"],
-        default: "pending"
+      type: String,
+      enum: ["pending", "processing", "shipped", "delivered", "completed", "cancelled"],
+      default: "pending",
     },
     paymentMethod: {
-        type: String,
-        default: "COD"
+      type: String,
+      default: "COD",
     },
     paymentStatus: {
-        type: String,
-        enum: ["pending", "completed", "failed"],
-        default: "pending"
-    }
-}, { timestamps: true });
+      type: String,
+      enum: ["pending", "completed", "failed", "refunded"],
+      default: "pending",
+    },
+    trackingId: {
+      type: String,
+    },
+  },
+  { timestamps: true }
+);
 
 export default mongoose.model("Order", orderSchema);
