@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import bidService from "../../services/bidService";
 import productService from "../../services/productService";
+import { useAuth } from "../../context/AuthContext";
 import { Gavel, Clock, Plus, Tag, ArrowRight, AlertCircle, Package } from "lucide-react";
 import CountdownTimer from "../../components/CountdownTimer";
 
 const AuctionList = () => {
+    const { user } = useAuth();
     const [auctions, setAuctions] = useState([]);
     const [products, setProducts] = useState([]);
     const [newAuction, setNewAuction] = useState({
@@ -13,7 +15,7 @@ const AuctionList = () => {
         startingPrice: "",
         endTime: "",
     });
-    const [newProduct, setNewProduct] = useState({ name: "", category: "Vegetables" }); // Quick add product state
+    const [newProduct, setNewProduct] = useState({ name: "", category: "Vegetables", price: "50" }); // Quick add product state
     const [showProductForm, setShowProductForm] = useState(false);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -86,12 +88,16 @@ const AuctionList = () => {
         }
 
         try {
-            console.log("Sending product data:", newProduct);
-            const res = await productService.createProduct(newProduct, token);
-            console.log("Product created:", res);
+            const productData = {
+                ...newProduct,
+                price: Number(newProduct.price) || 50,
+                stock: Number(newProduct.quantity) || 100,
+                description: `${newProduct.name} - freshly harvested farm quality produce.`
+            };
+            const res = await productService.createProduct(productData, token);
             setProducts([...products, res]);
             setNewAuction(prev => ({ ...prev, product: res._id })); // Auto-select new product
-            setNewProduct({ name: "", category: "Vegetables" });
+            setNewProduct({ name: "", category: "Vegetables", price: "50" });
             setShowProductForm(false);
             alert("Product Added Successfully!");
         } catch (err) {
@@ -120,7 +126,8 @@ const AuctionList = () => {
                     </div>
                 </div>
 
-                {/* Create Auction Section */}
+                {/* Create Auction Section (Farmers & Admins only) */}
+                {(user?.role === 'farmer' || user?.role === 'admin') && (
                 <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 mb-12 shadow-2xl">
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-2xl font-bold flex items-center gap-2">
@@ -242,6 +249,7 @@ const AuctionList = () => {
                         </div>
                     </form>
                 </div>
+                )}
 
                 {/* Auction Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -175,13 +175,23 @@ The platform enforces strict multi-layered security controls across both backend
 
 ---
 
+## 🔨 Real-Time Auction & Live Bidding Engine
+
+- **Socket.io Bidding Infrastructure**: Full duplex WebSocket communication via room subscriptions (`socket.join(auctionId)`), broadcasting instant price increases, highest bidder changes, bid counts, and time updates.
+- **Anti-Fraud & Shill Bidding Guard**: Hard rejection (`400 Bad Request`) when a seller attempts to place bids on their own produce auction, ensuring fair market integrity.
+- **Optimistic Concurrency & Expiry Automation**: High-throughput atomic state locks (`findOneAndUpdate` with active status checks) prevent race conditions and auto-close auctions upon expiration.
+- **Live Consumer Arena & Dynamic Feed**: Real-time bidding interface with interactive quick-bid buttons, live activity ticker (`/api/auctions/feed`), dynamic countdown timers, and winner announcements.
+- **Farmer Auction Management**: Comprehensive overview for farmers to launch lots with reserve prices and watch incoming live bids without manual refreshing.
+
+---
+
 ## 🗺️ Project Execution Roadmap
 
 - [x] **Phase 0: Workspace Setup, Git Repository Initialization & Hygiene**
 - [x] **Phase 1: Database Schema Modernization & Seed Data Engine**
 - [x] **Phase 2: Security, Authentication & Role-Based Access Control (RBAC)**
 - [x] **Phase 3: Dynamic Product Catalog & Farmer Inventory Management**
-- [ ] **Phase 4: Real-Time Auction & Live Bidding Engine**
+- [x] **Phase 4: Real-Time Auction & Live Bidding Engine**
 - [ ] **Phase 5: Secure Order Processing, Cart & Financial Calculations**
 - [ ] **Phase 6: Admin Command Center, Revenue Analytics & Governance**
 - [ ] **Phase 7: Codebase Hygiene, UX Polish & Global Error Handling**

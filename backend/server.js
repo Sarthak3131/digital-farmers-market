@@ -31,6 +31,19 @@ app.use(cors({
 }));
 app.use(express.json());
 
+// Health and root endpoint
+app.get("/", (req, res) => {
+  res.json({
+    status: "ok",
+    message: "TerraFresh Digital Farmers Market API running successfully",
+    version: "1.0.0"
+  });
+});
+
+app.get("/api/health", (req, res) => {
+  res.json({ status: "healthy", timestamp: new Date().toISOString() });
+});
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/auctions", auctionRoutes);
@@ -62,8 +75,8 @@ const startServer = async () => {
 
     // Standard Port Configuration
     const PORT = process.env.PORT || 5000;
-    httpServer.listen(PORT, () =>
-      console.log(`Server running on port ${PORT}`)
+    httpServer.listen(PORT, "0.0.0.0", () =>
+      console.log(`Server running on port ${PORT} (0.0.0.0)`)
     );
   } catch (err) {
     console.error("MongoDB Connection Error:", err);

@@ -1,14 +1,25 @@
 import express from "express";
-import { createAuction, placeBid, getAuction, getSellerAuctions, getAllAuctions, getRecentBids } from "../controllers/auctionController.js";
+import {
+  createAuction,
+  placeBid,
+  getAuction,
+  getSellerAuctions,
+  getAllAuctions,
+  getRecentBids,
+} from "../controllers/auctionController.js";
 import { protect } from "../middleware/authMiddleware.js";
+import roleMiddleware from "../middleware/roleMiddleware.js";
 
 const router = express.Router();
 
-router.post("/create", protect, createAuction);
-router.post("/bid", protect, placeBid);
-router.get("/seller", protect, getSellerAuctions); // New route
-router.get("/feed", getRecentBids); // Real-time activity feed
-router.get("/", getAllAuctions); // New route: Get all active auctions
+// Public routes
+router.get("/feed", getRecentBids);
+router.get("/", getAllAuctions);
 router.get("/:id", getAuction);
+
+// Protected routes
+router.post("/create", protect, roleMiddleware("farmer", "admin"), createAuction);
+router.post("/bid", protect, placeBid);
+router.get("/seller", protect, roleMiddleware("farmer", "admin"), getSellerAuctions);
 
 export default router;

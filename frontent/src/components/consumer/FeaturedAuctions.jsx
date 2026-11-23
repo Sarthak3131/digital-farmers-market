@@ -12,9 +12,11 @@ export default function FeaturedAuctions() {
         fetchAuctions();
     }, []);
 
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
     const fetchAuctions = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/auctions?status=active');
+            const res = await fetch(`${API_URL}/auctions?status=active`);
             const data = await res.json();
             // Take top 5 for the carousel
             if (res.ok) setAuctions(data.slice(0, 5));

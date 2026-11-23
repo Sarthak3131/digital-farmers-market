@@ -12,9 +12,11 @@ export default function MarketTicker() {
         return () => clearInterval(interval);
     }, []);
 
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
     const fetchFeed = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/auctions/feed');
+            const res = await fetch(`${API_URL}/auctions/feed`);
             const data = await res.json();
             if (res.ok && Array.isArray(data) && data.length > 0) {
                 setFeed(data);
