@@ -33,6 +33,7 @@ import Earnings from "../pages/farmer/Earnings";
 import FarmerProfile from "../pages/farmer/Profile";
 import Verification from "../pages/farmer/Verification";
 import MyProducts from "../pages/farmer/MyProducts";
+import FarmerOrders from "../pages/farmer/FarmerOrders";
 import FarmerBuying from "../pages/farmer/FarmerBuying";
 import FarmerSeeds from "../pages/farmer/market/FarmerSeeds";
 import FarmerFertilizers from "../pages/farmer/market/FarmerFertilizers";
@@ -100,6 +101,7 @@ export default function AppRouter() {
                 <Route path="profile" element={<FarmerProfile />} />
                 <Route path="verification" element={<Verification />} />
                 <Route path="products" element={<MyProducts />} />
+                <Route path="orders" element={<FarmerOrders />} />
                 <Route path="buy" element={<FarmerBuying />} >
                   <Route path="seeds" element={<FarmerSeeds />} />
                   <Route path="fertilizers" element={<FarmerFertilizers />} />

@@ -185,6 +185,17 @@ The platform enforces strict multi-layered security controls across both backend
 
 ---
 
+## 📦 Secure Order Processing, Cart & Financial Calculations
+
+- **Server-Side Financial Integrity**: All product prices, line items, and quantities are re-validated against database records. Client-side price tampering is completely nullified.
+- **Accurate Financial Calculations**: Automated server calculations for produce subtotal, statutory GST (5%), platform governance fee (2.5%), and threshold-based free delivery (> ₹500).
+- **Atomic Stock Management & Reversion**: Real-time inventory decrement upon checkout. If an order is cancelled by the buyer or refunded by the farmer/admin, inventory stock is automatically and atomically restored.
+- **Human-Readable Tracking**: Generates unique tracking identifiers (`TF-ORD-XXXXXX-XXXX`) with full event lifecycle tracking (`pending` -> `processing` -> `shipped` -> `delivered`).
+- **Farmer Produce Fulfillment (`/farmer/orders`)**: Dedicated portal for farmers to inspect incoming harvest orders, review customer delivery addresses, advance shipment stages, and track gross farm sales.
+- **Interactive Consumer Order Hub & Invoicing**: Real-time status progression, detailed item breakdown modal, PDF invoice downloads via `jsPDF`, and one-click order cancellation with inventory restitution.
+
+---
+
 ## 🗺️ Project Execution Roadmap
 
 - [x] **Phase 0: Workspace Setup, Git Repository Initialization & Hygiene**
@@ -192,7 +203,7 @@ The platform enforces strict multi-layered security controls across both backend
 - [x] **Phase 2: Security, Authentication & Role-Based Access Control (RBAC)**
 - [x] **Phase 3: Dynamic Product Catalog & Farmer Inventory Management**
 - [x] **Phase 4: Real-Time Auction & Live Bidding Engine**
-- [ ] **Phase 5: Secure Order Processing, Cart & Financial Calculations**
+- [x] **Phase 5: Secure Order Processing, Cart & Financial Calculations**
 - [ ] **Phase 6: Admin Command Center, Revenue Analytics & Governance**
 - [ ] **Phase 7: Codebase Hygiene, UX Polish & Global Error Handling**
 - [ ] **Phase 8: Production Readiness, Containerization & Cloud Deployment**

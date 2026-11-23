@@ -11,6 +11,7 @@ const orderSchema = new mongoose.Schema(
       {
         product: { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
         auction: { type: mongoose.Schema.Types.ObjectId, ref: "Auction" },
+        seller: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
         name: { type: String, required: true },
         quantity: { type: Number, required: true, default: 1 },
         price: { type: Number, required: true },

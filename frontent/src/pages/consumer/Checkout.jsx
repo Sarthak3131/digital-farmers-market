@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../routes/CartContext';
+import orderService from '../../services/orderService';
 import {
   ArrowLeft,
   CreditCard,
@@ -40,6 +41,7 @@ export default function Checkout() {
   });
   const [deliverySlot, setDeliverySlot] = useState('now');
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [placedOrderData, setPlacedOrderData] = useState(null);
 
   const calculateTax = () => (cartTotal * 0.05).toFixed(2);
   const deliveryFee = cartTotal > 300 ? 0 : 40;
@@ -69,67 +71,64 @@ export default function Checkout() {
 
       const orderData = {
         items: cartItems.map(item => ({
-          product: item.id.length === 24 ? item.id : null,
+          product: (item._id && item._id.length === 24) ? item._id : (item.id && item.id.length === 24 ? item.id : null),
           name: item.name,
-          quantity: item.quantity,
+          quantity: item.quantity || 1,
           price: item.price,
-          image: item.img
+          image: item.img || item.image
         })),
         shippingAddress: deliveryAddress,
+        deliverySlot: deliverySlots.find(s => s.id === deliverySlot)?.label || deliverySlot,
         paymentMethod: paymentMethod,
-        totalAmount: totalAmount
+        totalAmount: Number(totalAmount)
       };
 
-      const response = await fetch('http://localhost:5000/api/orders', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(orderData)
-      });
-
-      if (response.ok) {
-        setOrderPlaced(true);
-        setTimeout(() => {
-          clearCart();
-          navigate('/consumer/orders');
-        }, 2000);
-      } else {
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.indexOf("application/json") !== -1) {
-          const error = await response.json();
-          alert(`Order Failed: ${error.message}`);
-        } else {
-          const text = await response.text();
-          console.error("Backend Error:", text);
-          alert(`Order Failed (Server Error ${response.status}): ${text.substring(0, 100)}...`);
-        }
-      }
+      const res = await orderService.createOrder(orderData, token);
+      setPlacedOrderData(res);
+      setOrderPlaced(true);
+      clearCart();
+      setTimeout(() => {
+        navigate('/consumer/orders');
+      }, 3500);
     } catch (error) {
       console.error("Order error:", error);
-      alert(`Network/Client Error: ${error.message}`);
+      const errMsg = error.response?.data?.message || error.message || "Failed to place order";
+      alert(`Order Failed: ${errMsg}`);
     }
   };
 
   if (orderPlaced) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center">
-        <div className="text-center p-8 max-w-md">
+      <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center p-4">
+        <div className="text-center p-8 max-w-md bg-white rounded-3xl shadow-xl border border-green-100">
           <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse">
             <CheckCircle className="w-12 h-12 text-green-600" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-800 mb-4">Order Placed Successfully!</h1>
-          <p className="text-gray-600 mb-6">Your order has been confirmed and will be delivered soon.</p>
-          <div className="bg-green-50 p-4 rounded-xl mb-6">
-            <p className="text-sm text-gray-600">Order ID: <span className="font-bold">ORD-{Date.now().toString().slice(-8)}</span></p>
-            <p className="text-sm text-gray-600 mt-2">Estimated Delivery: <span className="font-bold">Within 2 hours</span></p>
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">Order Placed Successfully!</h1>
+          <p className="text-gray-600 mb-6">Your fresh harvest order is confirmed with our farmers.</p>
+          <div className="bg-green-50 p-4 rounded-2xl mb-6 text-left border border-green-200">
+            <p className="text-sm text-gray-700 flex justify-between">
+              <span>Tracking ID:</span>
+              <span className="font-mono font-bold text-green-800">{placedOrderData?.trackingId || 'TF-ORD-LIVE'}</span>
+            </p>
+            <p className="text-sm text-gray-700 flex justify-between mt-2">
+              <span>Total Paid:</span>
+              <span className="font-bold text-gray-900">₹{placedOrderData?.totalAmount || totalAmount}</span>
+            </p>
+            <p className="text-sm text-gray-700 flex justify-between mt-2">
+              <span>Payment Mode:</span>
+              <span className="font-semibold text-gray-800 uppercase">{placedOrderData?.paymentMethod || paymentMethod}</span>
+            </p>
+            <p className="text-sm text-gray-700 flex justify-between mt-2">
+              <span>Estimated Delivery:</span>
+              <span className="font-bold text-green-700">Within 24 Hours</span>
+            </p>
           </div>
           <button
             onClick={() => navigate('/consumer/orders')}
-            className="w-full bg-gradient-to-r from-[#1a5d36] to-green-600 text-white py-3 rounded-xl font-bold hover:shadow-lg transition-all"
+            className="w-full bg-gradient-to-r from-[#1a5d36] to-green-600 text-white py-3.5 rounded-xl font-bold hover:shadow-lg transition-all"
           >
-            View Order Details
+            View in My Orders
           </button>
         </div>
       </div>

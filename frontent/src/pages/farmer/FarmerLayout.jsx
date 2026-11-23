@@ -9,8 +9,9 @@ export default function FarmerLayout() {
   const sidebarLinks = [
     { name: "Overview", icon: <LayoutDashboard size={20} />, path: "/farmer" },
     { name: "Inventory", icon: <Package size={20} />, path: "/farmer/products" },
+    { name: "Produce Orders", icon: <ShoppingBag size={20} />, path: "/farmer/orders" },
     { name: "Live Auctions", icon: <Gavel size={20} />, path: "/farmer/live" },
-    { name: "Global Sales", icon: <ShoppingBag size={20} />, path: "/farmer/buy" },
+    { name: "Farm Store", icon: <ShoppingBag size={20} />, path: "/farmer/buy" },
     { name: "Earnings", icon: <DollarSign size={20} />, path: "/farmer/earnings" },
     { name: "Verification", icon: <ShieldCheck size={20} />, path: "/farmer/verification" },
   ];
