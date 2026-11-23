@@ -45,6 +45,7 @@ import { CartProvider } from './CartContext';
 import { AuthProvider } from '../context/AuthContext';
 import { LocationProvider } from '../context/LocationContext';
 import GlobalToast from '../components/common/GlobalToast';
+import NotFound from '../components/common/NotFound';
 
 export default function AppRouter() {
   return (
@@ -112,7 +113,7 @@ export default function AppRouter() {
               </Route>
             </Route>
 
-            <Route path="*" element={<h1 className="p-6">Page Not Found</h1>} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </LocationProvider>
       </CartProvider>

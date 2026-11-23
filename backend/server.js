@@ -10,6 +10,7 @@ import auctionRoutes from "./routes/auctionRoutes.js";
 import productRoutes from "./routes/productRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import orderRoutes from "./routes/orderRoutes.js";
+import { notFound, errorHandler } from "./middleware/errorMiddleware.js";
 
 dotenv.config();
 
@@ -50,6 +51,10 @@ app.use("/api/auctions", auctionRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/orders", orderRoutes);
+
+// Global Error Handling Middleware
+app.use(notFound);
+app.use(errorHandler);
 
 // Socket.io Logic
 app.set("io", io);
