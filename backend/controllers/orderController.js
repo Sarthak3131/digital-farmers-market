@@ -1,8 +1,27 @@
+import mongoose from "mongoose";
 import Order from "../models/Order.js";
 import Product from "../models/Product.js";
 
 // Helper to round to 2 decimal places
 const round2 = (num) => Math.round((num + Number.EPSILON) * 100) / 100;
+
+// Helper to safely roll back decremented stock on multi-item failure
+const rollbackDeductedStock = async (items) => {
+  for (const item of items) {
+    try {
+      const prod = await Product.findByIdAndUpdate(
+        item.product,
+        {
+          $inc: { stock: item.quantity },
+          $set: { status: "available" }
+        },
+        { new: true }
+      );
+    } catch (err) {
+      console.error(`Failed to rollback stock for product ${item.product}:`, err);
+    }
+  }
+};
 
 // @desc    Create new order with server-side validation & stock deduction
 // @route   POST /api/orders
@@ -67,65 +86,128 @@ export const createOrder = async (req, res) => {
     // Total Amount
     const totalAmount = round2(calculatedSubtotal + tax + deliveryFee);
 
-    // 3. Atomically decrement inventory stock
-    for (const vItem of validatedItems) {
-      const updatedProduct = await Product.findByIdAndUpdate(
-        vItem.product,
-        { $inc: { stock: -vItem.quantity } },
-        { new: true }
-      );
+    // 3. Atomically decrement inventory stock using conditional atomic check ($gte)
+    // Supports MongoDB transactions if replica set is available, else atomic compensation rollback
+    const isReplicaSet = mongoose.connection.client?.topology?.description?.type?.includes("ReplicaSet") || false;
+    const session = isReplicaSet ? await mongoose.startSession() : null;
+    if (session) session.startTransaction();
 
-      // If stock reached 0 or less, mark status as sold_out
-      if (updatedProduct && updatedProduct.stock <= 0) {
-        updatedProduct.status = "sold_out";
-        await updatedProduct.save();
+    const decrementedItems = [];
+    let stockDeductionFailed = false;
+    let failedItemName = "";
+
+    try {
+      for (const vItem of validatedItems) {
+        // Enforce conditional atomic decrement: stock must be >= requested quantity
+        const query = { _id: vItem.product, stock: { $gte: vItem.quantity } };
+        const update = { $inc: { stock: -vItem.quantity } };
+        const options = { new: true, ...(session ? { session } : {}) };
+
+        const updatedProduct = await Product.findOneAndUpdate(query, update, options);
+
+        if (!updatedProduct) {
+          stockDeductionFailed = true;
+          failedItemName = vItem.name;
+          break;
+        }
+
+        decrementedItems.push(vItem);
+
+        // If stock reaches 0, update product status to sold_out
+        if (updatedProduct.stock === 0) {
+          await Product.findByIdAndUpdate(
+            vItem.product,
+            { $set: { status: "sold_out" } },
+            options
+          );
+        }
       }
-    }
 
-    // 4. Generate unique tracking ID
-    const trackingId = `TF-ORD-${Date.now().toString().slice(-6)}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      if (stockDeductionFailed) {
+        if (session) {
+          await session.abortTransaction();
+          await session.endSession();
+        } else {
+          // Compensate / roll back previously decremented items
+          await rollbackDeductedStock(decrementedItems);
+        }
+        return res.status(400).json({
+          message: `Insufficient stock for "${failedItemName}". It may have just been purchased by another buyer.`
+        });
+      }
 
-    // 5. Construct & Save Order
-    const order = new Order({
-      buyer: req.user._id,
-      items: validatedItems,
-      subtotal: calculatedSubtotal,
-      tax,
-      deliveryFee,
-      platformFee,
-      totalAmount,
-      shippingAddress: {
-        name: shippingAddress.name || req.user.name,
-        phone: shippingAddress.phone || req.user.phone || "",
-        email: shippingAddress.email || req.user.email || "",
-        address: shippingAddress.address,
-        city: shippingAddress.city || "Mumbai",
-        state: shippingAddress.state || "Maharashtra",
-        pincode: shippingAddress.pincode || "400001",
-        instructions: shippingAddress.instructions || deliverySlot || ""
-      },
-      status: "pending",
-      paymentMethod: (paymentMethod || "COD").toUpperCase(),
-      paymentStatus: (paymentMethod || "").toUpperCase() === "COD" ? "pending" : "completed",
-      trackingId
-    });
+      // 4. Generate unique tracking ID
+      const trackingId = `TF-ORD-${Date.now().toString().slice(-6)}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
 
-    const createdOrder = await order.save();
-
-    // 6. Broadcast Real-time Order Notification to Admin and Socket rooms
-    const io = req.app.get("io");
-    if (io) {
-      io.emit("new_order", {
-        orderId: createdOrder._id,
-        trackingId: createdOrder.trackingId,
-        buyerName: req.user.name,
-        totalAmount: createdOrder.totalAmount,
-        itemCount: createdOrder.items.length,
-        createdAt: createdOrder.createdAt
+      // 5. Construct & Save Order
+      const order = new Order({
+        buyer: req.user._id,
+        items: validatedItems,
+        subtotal: calculatedSubtotal,
+        tax,
+        deliveryFee,
+        platformFee,
+        totalAmount,
+        shippingAddress: {
+          name: shippingAddress.name || req.user.name,
+          phone: shippingAddress.phone || req.user.phone || "",
+          email: shippingAddress.email || req.user.email || "",
+          address: shippingAddress.address,
+          city: shippingAddress.city || "Mumbai",
+          state: shippingAddress.state || "Maharashtra",
+          pincode: shippingAddress.pincode || "400001",
+          instructions: shippingAddress.instructions || deliverySlot || ""
+        },
+        status: "pending",
+        paymentMethod: (paymentMethod || "COD").toUpperCase(),
+        // SEC-02: Never mark Card/UPI as paid merely on order selection. All orders start with pending payment.
+        paymentStatus: "pending",
+        trackingId
       });
-    }
 
-    res.status(201).json(createdOrder);
+      const createdOrder = session ? await order.save({ session }) : await order.save();
+
+      if (session) {
+        await session.commitTransaction();
+        await session.endSession();
+      }
+
+      // 6. Broadcast Real-time Order Notification to Admin and affected Seller rooms (SEC-04)
+      const io = req.app.get("io");
+      if (io) {
+        const adminOrderPayload = {
+          orderId: createdOrder._id,
+          trackingId: createdOrder.trackingId,
+          buyerName: req.user.name,
+          totalAmount: createdOrder.totalAmount,
+          itemCount: createdOrder.items.length,
+          createdAt: createdOrder.createdAt
+        };
+        // Emit to admin room
+        io.to("admin_room").emit("new_order", adminOrderPayload);
+
+        // Emit to affected farmers in their private user rooms
+        const sellerIds = [...new Set(createdOrder.items.map((it) => it.seller?.toString()).filter(Boolean))];
+        for (const sellerId of sellerIds) {
+          io.to(`user_${sellerId}`).emit("new_order", {
+            orderId: createdOrder._id,
+            trackingId: createdOrder.trackingId,
+            itemCount: createdOrder.items.filter((it) => it.seller?.toString() === sellerId).length,
+            createdAt: createdOrder.createdAt
+          });
+        }
+      }
+
+      return res.status(201).json(createdOrder);
+    } catch (orderProcError) {
+      if (session) {
+        await session.abortTransaction();
+        await session.endSession();
+      } else {
+        await rollbackDeductedStock(decrementedItems);
+      }
+      throw orderProcError;
+    }
   } catch (error) {
     console.error("Create Order Error:", error);
     res.status(500).json({ message: error.message || "Failed to place order" });
@@ -226,6 +308,30 @@ export const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ message: "Order not found" });
     }
 
+    // SEC-05: Enforce ownership - Farmer can only update orders where they own all items.
+    // Admin authorization remains separate.
+    if (req.user.role !== "admin") {
+      const isSellerOfAny = order.items.some(
+        (item) => item.seller?.toString() === req.user._id.toString()
+      );
+
+      if (!isSellerOfAny) {
+        return res.status(403).json({
+          message: "Forbidden: You are not authorized to update an order containing produce you do not sell."
+        });
+      }
+
+      const isSellerOfAll = order.items.every(
+        (item) => item.seller?.toString() === req.user._id.toString()
+      );
+
+      if (!isSellerOfAll) {
+        return res.status(403).json({
+          message: "Forbidden: This order contains items from multiple sellers. Only an administrator can update multi-seller orders."
+        });
+      }
+    }
+
     // If changing to cancelled and was not already cancelled, restore inventory
     if (status === "cancelled" && order.status !== "cancelled") {
       for (const item of order.items) {
@@ -246,15 +352,24 @@ export const updateOrderStatus = async (req, res) => {
 
     const updatedOrder = await order.save();
 
-    // Broadcast socket update
+    // Broadcast socket update targeted to Admin, Buyer, and Sellers (SEC-04)
     const io = req.app.get("io");
     if (io) {
-      io.emit("order_status_updated", {
+      const statusPayload = {
         orderId: updatedOrder._id,
         trackingId: updatedOrder.trackingId,
         status: updatedOrder.status,
         paymentStatus: updatedOrder.paymentStatus
-      });
+      };
+
+      io.to("admin_room").emit("order_status_updated", statusPayload);
+      if (updatedOrder.buyer) {
+        io.to(`user_${updatedOrder.buyer.toString()}`).emit("order_status_updated", statusPayload);
+      }
+      const sellerIds = [...new Set(updatedOrder.items.map((it) => it.seller?.toString()).filter(Boolean))];
+      for (const sellerId of sellerIds) {
+        io.to(`user_${sellerId}`).emit("order_status_updated", statusPayload);
+      }
     }
 
     res.json(updatedOrder);
@@ -304,11 +419,19 @@ export const cancelMyOrder = async (req, res) => {
 
     const io = req.app.get("io");
     if (io) {
-      io.emit("order_status_updated", {
+      const statusPayload = {
         orderId: savedOrder._id,
         trackingId: savedOrder.trackingId,
         status: savedOrder.status
-      });
+      };
+      io.to("admin_room").emit("order_status_updated", statusPayload);
+      if (savedOrder.buyer) {
+        io.to(`user_${savedOrder.buyer.toString()}`).emit("order_status_updated", statusPayload);
+      }
+      const sellerIds = [...new Set(savedOrder.items.map((it) => it.seller?.toString()).filter(Boolean))];
+      for (const sellerId of sellerIds) {
+        io.to(`user_${sellerId}`).emit("order_status_updated", statusPayload);
+      }
     }
 
     res.json({ message: "Order cancelled successfully", order: savedOrder });
@@ -332,5 +455,64 @@ export const getAllOrders = async (req, res) => {
   } catch (error) {
     console.error("Get All Orders Error:", error);
     res.status(500).json({ message: error.message || "Failed to fetch orders" });
+  }
+};
+
+// @desc    Confirm payment for an order (Explicit Development Mock Gateway Mode / Webhook)
+// @route   POST /api/orders/:id/confirm-payment
+// @access  Private (Consumer / Admin)
+export const confirmPayment = async (req, res) => {
+  try {
+    const { transactionId, gateway = "MOCK_PAYMENT_GATEWAY" } = req.body;
+
+    const order = await Order.findById(req.params.id);
+    if (!order) {
+      return res.status(404).json({ message: "Order not found" });
+    }
+
+    // Verify buyer ownership or admin
+    if (order.buyer.toString() !== req.user._id.toString() && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized to confirm payment for this order" });
+    }
+
+    if (order.paymentStatus === "completed") {
+      return res.status(400).json({ message: "Payment is already marked as completed" });
+    }
+
+    order.paymentStatus = "completed";
+    if (order.status === "pending") {
+      order.status = "processing";
+    }
+
+    const savedOrder = await order.save();
+
+    // Broadcast targeted update
+    const io = req.app.get("io");
+    if (io) {
+      const payload = {
+        orderId: savedOrder._id,
+        trackingId: savedOrder.trackingId,
+        paymentStatus: savedOrder.paymentStatus,
+        status: savedOrder.status
+      };
+      io.to("admin_room").emit("order_status_updated", payload);
+      io.to(`user_${savedOrder.buyer.toString()}`).emit("order_status_updated", payload);
+      const sellerIds = [...new Set(savedOrder.items.map((it) => it.seller?.toString()).filter(Boolean))];
+      for (const sellerId of sellerIds) {
+        io.to(`user_${sellerId}`).emit("order_status_updated", payload);
+      }
+    }
+
+    res.json({
+      message: "Payment confirmed successfully",
+      mode: "DEVELOPMENT_MOCK_SANDBOX",
+      note: "Explicit development sandbox mode. For production, connect Razorpay/Stripe webhooks with cryptographic HMAC signature verification.",
+      order: savedOrder,
+      transactionId: transactionId || `TXN-MOCK-${Date.now()}`,
+      gateway
+    });
+  } catch (error) {
+    console.error("Confirm Payment Error:", error);
+    res.status(500).json({ message: error.message || "Failed to confirm payment" });
   }
 };

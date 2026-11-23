@@ -6,7 +6,6 @@ const bidSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: "Auction",
       required: true,
-      index: true,
     },
     bidder: {
       type: mongoose.Schema.Types.ObjectId,
@@ -25,5 +24,8 @@ const bidSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// PERF-01: Compound index for retrieving auction bid history and counting
+bidSchema.index({ auction: 1, createdAt: -1 });
 
 export default mongoose.model("Bid", bidSchema);

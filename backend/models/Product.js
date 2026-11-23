@@ -26,7 +26,6 @@ const productSchema = new mongoose.Schema(
         "Other",
       ],
       default: "Vegetables",
-      index: true,
     },
     price: {
       type: Number,
@@ -81,5 +80,10 @@ const productSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// PERF-01: Performance indexes based on catalog and seller inventory query patterns
+productSchema.index({ seller: 1, createdAt: -1 });
+productSchema.index({ category: 1, status: 1, price: 1 });
+productSchema.index({ name: "text", description: "text" });
 
 export default mongoose.model("Product", productSchema);

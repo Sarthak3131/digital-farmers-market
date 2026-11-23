@@ -7,8 +7,13 @@ export const register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "Name, email, and password are required" });
+    // SEC-07: Validate input types and presence
+    if (
+      !name || typeof name !== "string" || !name.trim() ||
+      !email || typeof email !== "string" || !email.trim() ||
+      !password || typeof password !== "string"
+    ) {
+      return res.status(400).json({ message: "Valid name, email, and password strings are required" });
     }
 
     // Security: Prevent privilege escalation to admin via registration
@@ -75,8 +80,9 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required" });
+    // SEC-07: Validate input types and presence
+    if (!email || typeof email !== "string" || !email.trim() || !password || typeof password !== "string") {
+      return res.status(400).json({ message: "Valid email and password strings are required" });
     }
 
     const cleanEmail = email.toLowerCase().trim();

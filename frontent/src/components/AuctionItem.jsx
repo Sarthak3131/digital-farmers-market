@@ -57,7 +57,11 @@ export default function AuctionItem() {
     fetchAuction();
 
     // Socket Connection
-    const socket = io(SOCKET_URL);
+    const token = localStorage.getItem("token");
+    const socket = io(SOCKET_URL, {
+      auth: { token },
+      transports: ["websocket", "polling"]
+    });
 
     socket.on("connect", () => {
       socket.emit("join_auction", id);

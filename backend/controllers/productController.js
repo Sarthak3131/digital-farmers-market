@@ -1,6 +1,11 @@
 import Product from "../models/Product.js";
 import mongoose from "mongoose";
 
+// Helper to escape regex special characters (SEC-07: Safe ReDoS prevention)
+const escapeRegex = (str) => {
+  return typeof str === "string" ? str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") : "";
+};
+
 // @desc    Get all products with query filtering (category, search, seller, price, sort)
 // @route   GET /api/products
 // @access  Public
@@ -10,36 +15,38 @@ export const getProducts = async (req, res) => {
 
     const query = {};
 
-    // Filter by Category (case-insensitive regex)
-    if (category && category !== "All") {
-      query.category = new RegExp(`^${category.trim()}$`, "i");
+    // Filter by Category (type checked and escaped)
+    if (typeof category === "string" && category.trim() && category !== "All") {
+      const safeCategory = escapeRegex(category.trim());
+      query.category = new RegExp(`^${safeCategory}$`, "i");
     }
 
-    // Filter by Search Keyword (in name or description)
-    if (search && search.trim()) {
-      const searchRegex = new RegExp(search.trim(), "i");
+    // Filter by Search Keyword (type checked and escaped)
+    if (typeof search === "string" && search.trim()) {
+      const safeSearch = escapeRegex(search.trim());
+      const searchRegex = new RegExp(safeSearch, "i");
       query.$or = [{ name: searchRegex }, { description: searchRegex }];
     }
 
-    // Filter by Seller
-    if (seller && mongoose.Types.ObjectId.isValid(seller)) {
+    // Filter by Seller (must be valid ObjectId)
+    if (typeof seller === "string" && mongoose.Types.ObjectId.isValid(seller)) {
       query.seller = seller;
     }
 
-    // Filter by Price Range
+    // Filter by Price Range (strictly numeric)
     if (minPrice !== undefined || maxPrice !== undefined) {
       query.price = {};
       if (minPrice !== undefined && !isNaN(Number(minPrice))) {
-        query.price.$gte = Number(minPrice);
+        query.price.$gte = Math.max(0, Number(minPrice));
       }
       if (maxPrice !== undefined && !isNaN(Number(maxPrice))) {
-        query.price.$lte = Number(maxPrice);
+        query.price.$lte = Math.max(0, Number(maxPrice));
       }
     }
 
-    // Filter by Status
-    if (status) {
-      query.status = status;
+    // Filter by Status (type checked string)
+    if (typeof status === "string" && status.trim()) {
+      query.status = status.trim();
     }
 
     // Sort order

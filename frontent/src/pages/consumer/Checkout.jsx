@@ -84,7 +84,22 @@ export default function Checkout() {
       };
 
       const res = await orderService.createOrder(orderData, token);
-      setPlacedOrderData(res);
+
+      let finalOrder = res;
+      if (paymentMethod !== 'cod') {
+        try {
+          const confirmRes = await orderService.confirmPayment(
+            res._id,
+            { transactionId: `TXN-DEV-${Date.now()}`, gateway: "MOCK_PAYMENT_GATEWAY" },
+            token
+          );
+          finalOrder = confirmRes.order || res;
+        } catch (payErr) {
+          console.warn("Mock payment confirmation error:", payErr);
+        }
+      }
+
+      setPlacedOrderData(finalOrder);
       setOrderPlaced(true);
       clearCart();
       setTimeout(() => {

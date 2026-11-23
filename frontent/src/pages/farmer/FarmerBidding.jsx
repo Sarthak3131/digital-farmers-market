@@ -42,7 +42,11 @@ export default function FarmerBidding() {
     fetchAuctions();
     fetchFarmerProducts();
 
-    const socket = io(SOCKET_URL);
+    const token = localStorage.getItem("token");
+    const socket = io(SOCKET_URL, {
+      auth: { token },
+      transports: ["websocket", "polling"]
+    });
 
     socket.on("new_bid", (data) => {
       setActiveAuctions((prev) =>

@@ -1,6 +1,7 @@
 import express from "express";
 import { protect, admin } from "../middleware/authMiddleware.js";
 import roleMiddleware from "../middleware/roleMiddleware.js";
+import { orderRateLimiter } from "../middleware/rateLimiter.js";
 import {
   createOrder,
   getMyOrders,
@@ -8,14 +9,15 @@ import {
   getOrderById,
   updateOrderStatus,
   cancelMyOrder,
-  getAllOrders
+  getAllOrders,
+  confirmPayment
 } from "../controllers/orderController.js";
 
 const router = express.Router();
 
 // Order creation and admin listing
 router.route("/")
-  .post(protect, createOrder)
+  .post(protect, orderRateLimiter, createOrder)
   .get(protect, admin, getAllOrders);
 
 // User-specific orders
@@ -32,5 +34,8 @@ router.route("/:id/status").put(protect, roleMiddleware("farmer", "admin"), upda
 
 // Order cancellation by customer
 router.route("/:id/cancel").put(protect, cancelMyOrder);
+
+// Confirm payment (SEC-02: Explicit sandbox gateway / verified webhook)
+router.route("/:id/confirm-payment").post(protect, confirmPayment);
 
 export default router;

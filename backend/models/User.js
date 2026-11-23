@@ -13,7 +13,6 @@ const userSchema = new mongoose.Schema(
       unique: true,
       lowercase: true,
       trim: true,
-      index: true,
     },
     password: {
       type: String,
@@ -71,5 +70,8 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true }
 );
+
+// PERF-01: Compound index for admin governance queries and role filtering
+userSchema.index({ role: 1, isVerified: 1, isActive: 1 });
 
 export default mongoose.model("User", userSchema);

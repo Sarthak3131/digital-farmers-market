@@ -18,6 +18,8 @@ import Checkout from "../pages/consumer/Checkout";
 import ConsumerProfile from "../pages/consumer/Profile";
 import AuctionList from "../pages/consumer/AuctionList";
 import AuctionItem from "../components/AuctionItem"; // Premium UI Component
+import ProductDetails from "../pages/consumer/ProductDetails";
+import Unauthorized from "../pages/error/Unauthorized";
 import AdminDashboard from "../pages/admin/AdminDashboard";
 import Analytics from "../pages/admin/Analytics";
 import Disputes from "../pages/admin/Disputes";
@@ -77,7 +79,11 @@ export default function AppRouter() {
               <Route path="/consumer/profile" element={<ConsumerProfile />} />
               <Route path="/consumer/auctions" element={<AuctionList />} />
               <Route path="/consumer/auctions/:id" element={<AuctionItem />} />
+              <Route path="/consumer/product/:id" element={<ProductDetails />} />
             </Route>
+
+            {/* Unauthorized 403 Route */}
+            <Route path="/unauthorized" element={<Unauthorized />} />
 
             {/* Admin Protected Routes */}
             <Route element={<ProtectedRoute allowedRoles={['admin']} />}>

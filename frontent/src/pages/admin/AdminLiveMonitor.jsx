@@ -8,8 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Use environment variable for URL or default to localhost
-const SOCKET_URL = 'http://localhost:5000';
-const socket = io(SOCKET_URL);
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
 
 export default function AdminLiveMonitor() {
     const navigate = useNavigate();
@@ -18,6 +17,12 @@ export default function AdminLiveMonitor() {
     const [systemStatus, setSystemStatus] = useState("Operational");
 
     useEffect(() => {
+        const token = localStorage.getItem('token');
+        const socket = io(SOCKET_URL, {
+            auth: { token },
+            transports: ["websocket", "polling"]
+        });
+
         fetchAuctions();
 
         // Listen for new bids
@@ -42,6 +47,7 @@ export default function AdminLiveMonitor() {
         return () => {
             socket.off("new_bid");
             socket.off("auction_update");
+            socket.disconnect();
         };
     }, []);
 

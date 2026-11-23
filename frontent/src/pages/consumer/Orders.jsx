@@ -77,7 +77,11 @@ export default function Orders() {
     fetchOrders();
 
     const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
-    const socket = io(socketUrl);
+    const token = localStorage.getItem("token");
+    const socket = io(socketUrl, {
+      auth: { token },
+      transports: ["websocket", "polling"]
+    });
 
     socket.on("order_status_updated", (payload) => {
       setOrders(prev =>

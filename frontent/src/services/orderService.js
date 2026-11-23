@@ -56,6 +56,12 @@ export const orderService = {
     const res = await axios.get(API_URL, getAuthConfig(token));
     return res.data;
   },
+
+  // Confirm payment (SEC-02: Simulated sandbox gateway confirmation)
+  confirmPayment: async (orderId, paymentData, token) => {
+    const res = await axios.post(`${API_URL}/${orderId}/confirm-payment`, paymentData, getAuthConfig(token));
+    return res.data;
+  },
 };
 
 export default orderService;

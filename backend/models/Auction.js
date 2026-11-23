@@ -46,4 +46,8 @@ const auctionSchema = new mongoose.Schema({
     },
 }, { timestamps: true });
 
+// PERF-01: Performance indexes for active auction feeds and farmer listings
+auctionSchema.index({ status: 1, endTime: 1 });
+auctionSchema.index({ seller: 1, createdAt: -1 });
+
 export default mongoose.model("Auction", auctionSchema);

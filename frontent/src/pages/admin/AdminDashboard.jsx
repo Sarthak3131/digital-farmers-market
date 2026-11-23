@@ -56,7 +56,11 @@ export default function AdminDashboard() {
     fetchNotifications();
 
     // Socket Connection
-    const socket = io(SOCKET_URL);
+    const token = localStorage.getItem("token");
+    const socket = io(SOCKET_URL, {
+      auth: { token },
+      transports: ["websocket", "polling"]
+    });
 
     socket.on('connect', () => {
       console.log("Admin Dashboard Connected to Socket");

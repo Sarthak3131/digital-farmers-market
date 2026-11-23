@@ -70,4 +70,10 @@ const orderSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// PERF-01: Performance indexes for consumer orders, farmer fulfillment and tracking lookup
+orderSchema.index({ buyer: 1, createdAt: -1 });
+orderSchema.index({ "items.seller": 1, createdAt: -1 });
+orderSchema.index({ status: 1, createdAt: -1 });
+orderSchema.index({ trackingId: 1 }, { unique: true, sparse: true });
+
 export default mongoose.model("Order", orderSchema);

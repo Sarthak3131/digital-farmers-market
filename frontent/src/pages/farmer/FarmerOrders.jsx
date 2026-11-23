@@ -28,7 +28,11 @@ export default function FarmerOrders() {
 
     // Socket.io for live order notifications
     const socketUrl = import.meta.env.VITE_SOCKET_URL || "http://localhost:5000";
-    const socket = io(socketUrl);
+    const token = localStorage.getItem("token");
+    const socket = io(socketUrl, {
+      auth: { token },
+      transports: ["websocket", "polling"]
+    });
 
     socket.on("new_order", () => {
       fetchFarmerOrders();

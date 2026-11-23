@@ -7,7 +7,6 @@ import bidService from "../../services/bidService"; // Assuming this exists or w
 // Create socket connection outside component to avoid reconnects
 // Use environment variable for URL or default to localhost
 const SOCKET_URL = import.meta.env.VITE_API_URL ? import.meta.env.VITE_API_URL.replace('/api', '') : 'http://localhost:5000';
-const socket = io(SOCKET_URL);
 
 const LiveBidding = () => {
     const { id } = useParams();
@@ -18,6 +17,11 @@ const LiveBidding = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        const token = localStorage.getItem('token');
+        const socket = io(SOCKET_URL, {
+            auth: { token },
+            transports: ["websocket", "polling"]
+        });
         // Fetch initial auction data
         const fetchAuction = async () => {
             try {
@@ -63,7 +67,8 @@ const LiveBidding = () => {
 
         return () => {
             socket.off("new_bid");
-            socket.emit("leave_auction", id); // Optional: if backend handles leave
+            socket.emit("leave_auction", id);
+            socket.disconnect();
         };
     }, [id]);
 
