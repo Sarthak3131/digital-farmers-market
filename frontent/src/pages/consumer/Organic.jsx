@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Star, Filter, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../routes/CartContext';
+import productService from '../../services/productService';
 
 // Import local images
 import honeyImg from '../../assets/images/products/organic_honey.jpg';
@@ -16,7 +17,7 @@ export default function OrganicPage() {
   const navigate = useNavigate();
   const { addToCart } = useCart();
 
-  const products = [
+  const defaultOrganic = [
     { id: 701, name: "Organic Honey", price: 400, unit: "500g", img: honeyImg, rating: 5.0 },
     { id: 702, name: "Cold Pressed Coconut Oil", price: 350, unit: "500ml", img: coconutOilImg, rating: 4.8 },
     { id: 703, name: "Jaggery Powder", price: 80, unit: "kg", img: jaggeryImg, rating: 4.9 },
@@ -24,6 +25,39 @@ export default function OrganicPage() {
     { id: 705, name: "Rock Salt (Himalayan)", price: 60, unit: "packet", img: rockSaltImg, rating: 5.0 },
     { id: 706, name: "Apple Cider Vinegar", price: 450, unit: "bottle", img: vinegarImg, rating: 4.8 },
   ];
+
+  const [products, setProducts] = useState(defaultOrganic);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchOrganic = async () => {
+      try {
+        const liveItems = await productService.getProducts({ category: "Organic" });
+        if (liveItems && liveItems.length > 0) {
+          const formatted = liveItems.map(item => {
+            const matchLocal = defaultOrganic.find(p => p.name.toLowerCase().includes(item.name.toLowerCase().split(' ')[0]));
+            return {
+              _id: item._id,
+              id: item._id,
+              name: item.name,
+              price: item.price,
+              unit: item.unit || "unit",
+              img: item.images?.[0] || matchLocal?.img || honeyImg,
+              rating: item.rating || 4.8,
+              stock: item.stock,
+              seller: item.seller?.name || "Certified Organic Grower",
+            };
+          });
+          setProducts(formatted);
+        }
+      } catch (err) {
+        console.warn("Using offline fallback organic items", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchOrganic();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#fafaf9] font-sans text-slate-800 pb-12">

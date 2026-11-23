@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Star, Filter, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../routes/CartContext';
+import productService from '../../services/productService';
 
 // Import local images
 import tomatoImg from '../../assets/images/products/tomato_seeds.jpg';
@@ -16,7 +17,7 @@ export default function SeedsPage() {
   const navigate = useNavigate();
   const { addToCart } = useCart();
 
-  const products = [
+  const defaultSeeds = [
     { id: 601, name: "Tomato Seeds", price: 50, unit: "packet", img: tomatoImg, rating: 4.8 },
     { id: 602, name: "Marigold Seeds", price: 40, unit: "packet", img: marigoldImg, rating: 4.7 },
     { id: 603, name: "Coriander Seeds", price: 30, unit: "packet", img: corianderImg, rating: 4.9 },
@@ -24,6 +25,39 @@ export default function SeedsPage() {
     { id: 605, name: "Money Plant", price: 200, unit: "pot", img: moneyPlantImg, rating: 4.6 },
     { id: 606, name: "Snake Plant", price: 250, unit: "pot", img: snakePlantImg, rating: 5.0 },
   ];
+
+  const [products, setProducts] = useState(defaultSeeds);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSeeds = async () => {
+      try {
+        const liveItems = await productService.getProducts({ category: "Seeds" });
+        if (liveItems && liveItems.length > 0) {
+          const formatted = liveItems.map(item => {
+            const matchLocal = defaultSeeds.find(p => p.name.toLowerCase().includes(item.name.toLowerCase().split(' ')[0]));
+            return {
+              _id: item._id,
+              id: item._id,
+              name: item.name,
+              price: item.price,
+              unit: item.unit || "packet",
+              img: item.images?.[0] || matchLocal?.img || tomatoImg,
+              rating: item.rating || 4.8,
+              stock: item.stock,
+              seller: item.seller?.name || "Verified Nursery",
+            };
+          });
+          setProducts(formatted);
+        }
+      } catch (err) {
+        console.warn("Using offline fallback seeds", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSeeds();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#f0fdfa] font-sans text-slate-800 pb-12">

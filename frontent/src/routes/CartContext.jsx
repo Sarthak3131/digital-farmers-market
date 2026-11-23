@@ -64,28 +64,29 @@ export const CartProvider = ({ children }) => {
 
   // Cart Actions
   const addToCart = (product) => {
+    const pId = product._id || product.id;
     setCartItems(prev => {
-      const existing = prev.find(item => item.id === product.id);
+      const existing = prev.find(item => (item._id || item.id) === pId);
       if (existing) {
         return prev.map(item =>
-          item.id === product.id ? { ...item, quantity: (item.quantity || 1) + 1 } : item
+          (item._id || item.id) === pId ? { ...item, quantity: (item.quantity || 1) + 1 } : item
         );
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, { ...product, id: pId, _id: pId, quantity: 1 }];
     });
 
     // Trigger Toast
-    setToastProduct(product);
+    setToastProduct({ ...product, id: pId, _id: pId });
     setShowToast(true);
   };
 
   const removeFromCart = (id) => {
-    setCartItems(prev => prev.filter(item => item.id !== id));
+    setCartItems(prev => prev.filter(item => (item._id || item.id) !== id));
   };
 
   const updateQuantity = (id, delta) => {
     setCartItems(prev => prev.map(item => {
-      if (item.id === id) {
+      if ((item._id || item.id) === id) {
         const newQty = (item.quantity || 1) + delta;
         return { ...item, quantity: Math.max(1, newQty) };
       }

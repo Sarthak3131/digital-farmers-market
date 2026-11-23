@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { ShoppingCart, Star, Filter, ArrowLeft, Search } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { ShoppingCart, Star, Filter, ArrowLeft, Search, Check } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../routes/CartContext';
+import productService from '../../services/productService';
 
 // Import all images
 import Artichoke from '../../assets/images/Artichoke.jpg';
@@ -115,7 +116,40 @@ export default function Vegetables() {
     { id: 150, name: "Pointed Gourd (Parwal)", price: 80, unit: "kg", img: PointedGourd, rating: 4.7 },
   ];
 
-  const filteredProducts = allProducts.filter(p =>
+  const [products, setProducts] = useState(allProducts);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchLiveProducts = async () => {
+      try {
+        const liveItems = await productService.getProducts({ category: "Vegetables" });
+        if (liveItems && liveItems.length > 0) {
+          const formatted = liveItems.map(item => {
+            const matchLocal = allProducts.find(p => p.name.toLowerCase().includes(item.name.toLowerCase().split(' ')[0]));
+            return {
+              _id: item._id,
+              id: item._id,
+              name: item.name,
+              price: item.price,
+              unit: item.unit || "kg",
+              img: item.images?.[0] || matchLocal?.img || RomaTomatoes,
+              rating: item.rating || 4.8,
+              stock: item.stock,
+              seller: item.seller?.name || "Verified Local Farmer",
+            };
+          });
+          setProducts(formatted);
+        }
+      } catch (err) {
+        console.warn("Using offline fallback vegetables", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLiveProducts();
+  }, []);
+
+  const filteredProducts = products.filter(p =>
     p.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 

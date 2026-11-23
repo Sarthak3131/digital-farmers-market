@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Star, Filter, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../routes/CartContext';
+import productService from '../../services/productService';
 
 // Import local images
 import milkImg from '../../assets/images/products/milk.jpg';
@@ -15,7 +16,7 @@ export default function DairyProducts() {
   const navigate = useNavigate();
   const { addToCart } = useCart();
 
-  const products = [
+  const defaultDairy = [
     { id: 101, name: "Fresh Cow Milk", price: 60, unit: "Litre", img: milkImg, rating: 4.8 },
     { id: 102, name: "Organic Butter", price: 450, unit: "500g", img: butterImg, rating: 4.9 },
     { id: 103, name: "Farm Fresh Paneer", price: 320, unit: "kg", img: paneerImg, rating: 4.7 },
@@ -23,6 +24,39 @@ export default function DairyProducts() {
     { id: 105, name: "Buffalo Ghee", price: 1100, unit: "Litre", img: gheeImg, rating: 5.0 },
     { id: 106, name: "Cheddar Cheese", price: 400, unit: "200g", img: cheeseImg, rating: 4.5 },
   ];
+
+  const [products, setProducts] = useState(defaultDairy);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDairy = async () => {
+      try {
+        const liveItems = await productService.getProducts({ category: "Dairy" });
+        if (liveItems && liveItems.length > 0) {
+          const formatted = liveItems.map(item => {
+            const matchLocal = defaultDairy.find(p => p.name.toLowerCase().includes(item.name.toLowerCase().split(' ')[0]));
+            return {
+              _id: item._id,
+              id: item._id,
+              name: item.name,
+              price: item.price,
+              unit: item.unit || "kg",
+              img: item.images?.[0] || matchLocal?.img || milkImg,
+              rating: item.rating || 4.8,
+              stock: item.stock,
+              seller: item.seller?.name || "Local Dairy Farmer",
+            };
+          });
+          setProducts(formatted);
+        }
+      } catch (err) {
+        console.warn("Using offline fallback dairy", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchDairy();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#f0f9ff] font-sans text-slate-800 pb-12">

@@ -1,13 +1,14 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Star, Filter, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../routes/CartContext';
+import productService from '../../services/productService';
 
 export default function Fruits() {
   const navigate = useNavigate();
   const { addToCart } = useCart();
 
-  const products = [
+  const defaultFruits = [
     { id: 201, name: "Kashmiri Apples", price: 180, unit: "kg", img: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?q=80&w=600&auto=format&fit=crop", rating: 4.9 },
     { id: 202, name: "Nagpur Oranges", price: 60, unit: "kg", img: "https://images.unsplash.com/photo-1547514701-42782101795e?q=80&w=600&auto=format&fit=crop", rating: 4.7 },
     { id: 203, name: "Strawberries", price: 120, unit: "box", img: "https://images.unsplash.com/photo-1464965911861-746a04b4bca6?q=80&w=600&auto=format&fit=crop", rating: 4.8 },
@@ -15,6 +16,36 @@ export default function Fruits() {
     { id: 205, name: "Bananas", price: 40, unit: "dozen", img: "https://images.unsplash.com/photo-1603833665858-e61d17a86224?q=80&w=600&auto=format&fit=crop", rating: 4.6 },
     { id: 206, name: "Pomegranates", price: 150, unit: "kg", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Pomegranate_fruit_and_seeds.jpg/640px-Pomegranate_fruit_and_seeds.jpg", rating: 4.8 },
   ];
+
+  const [products, setProducts] = useState(defaultFruits);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFruits = async () => {
+      try {
+        const liveItems = await productService.getProducts({ category: "Fruits" });
+        if (liveItems && liveItems.length > 0) {
+          const formatted = liveItems.map(item => ({
+            _id: item._id,
+            id: item._id,
+            name: item.name,
+            price: item.price,
+            unit: item.unit || "kg",
+            img: item.images?.[0] || "https://images.unsplash.com/photo-1619546813926-a78fa6372cd2?q=80&w=600&auto=format&fit=crop",
+            rating: item.rating || 4.8,
+            stock: item.stock,
+            seller: item.seller?.name || "Local Farmer",
+          }));
+          setProducts(formatted);
+        }
+      } catch (err) {
+        console.warn("Using offline fallback fruits", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchFruits();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#fff7f0] font-sans text-slate-800 pb-12">

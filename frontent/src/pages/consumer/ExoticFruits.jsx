@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Star, Filter, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../routes/CartContext';
+import productService from '../../services/productService';
 
 // Import local images
 import dragonImg from '../../assets/images/products/dragon_fruit.jpg';
@@ -16,7 +17,7 @@ export default function ExoticFruits() {
     const navigate = useNavigate();
     const { addToCart } = useCart();
 
-    const products = [
+    const defaultExotics = [
         { id: 801, name: "Dragon Fruit", price: 120, unit: "pc", img: dragonImg, rating: 4.8 },
         { id: 802, name: "Kiwi", price: 40, unit: "pc", img: kiwiImg, rating: 4.7 },
         { id: 803, name: "Avocado", price: 200, unit: "pc", img: avocadoImg, rating: 4.9 },
@@ -24,6 +25,39 @@ export default function ExoticFruits() {
         { id: 805, name: "Imported Blueberries", price: 350, unit: "125g", img: blueberryImg, rating: 4.9 },
         { id: 806, name: "Mangosteen", price: 450, unit: "kg", img: mangosteenImg, rating: 5.0 },
     ];
+
+    const [products, setProducts] = useState(defaultExotics);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchExotics = async () => {
+            try {
+                const liveItems = await productService.getProducts({ category: "Exotic" });
+                if (liveItems && liveItems.length > 0) {
+                    const formatted = liveItems.map(item => {
+                        const matchLocal = defaultExotics.find(p => p.name.toLowerCase().includes(item.name.toLowerCase().split(' ')[0]));
+                        return {
+                            _id: item._id,
+                            id: item._id,
+                            name: item.name,
+                            price: item.price,
+                            unit: item.unit || "pc",
+                            img: item.images?.[0] || matchLocal?.img || dragonImg,
+                            rating: item.rating || 4.8,
+                            stock: item.stock,
+                            seller: item.seller?.name || "Specialty Grower",
+                        };
+                    });
+                    setProducts(formatted);
+                }
+            } catch (err) {
+                console.warn("Using offline fallback exotics", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+        fetchExotics();
+    }, []);
 
     return (
         <div className="min-h-screen bg-[#fff0f5] font-sans text-slate-800 pb-12">

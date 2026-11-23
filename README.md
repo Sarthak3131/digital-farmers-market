@@ -166,12 +166,21 @@ The platform enforces strict multi-layered security controls across both backend
 
 ---
 
+## 🌾 Dynamic Product Catalog & Farmer Inventory
+
+- **Dynamic Multi-Category Catalog**: 9 consumer category catalogs (Vegetables, Fruits, Grains, Dairy, Organic, Seeds, Spices, Herbs, Exotic) fetch directly from `GET /api/products?category=<Category>` with instant search filtering, real-time stock indicators, and verified farmer badges.
+- **Robust Cart & ObjectId Interoperability**: `CartContext` seamlessly preserves MongoDB `_id` identifiers for reliable order placement, eliminating orphaned numeric ID mismatches.
+- **Farmer Inventory Center (`/farmer/products`)**: Dedicated inventory management interface enabling farmers to publish direct harvest produce, perform real-time stock adjustments (+/- stock), and monitor live auction lots.
+- **Full Backend Product CRUD**: Complete REST API with category filtering, keyword search, price range queries, farmer authorization checks, and automatic stock status transitions (`available`, `low_stock`, `sold_out`).
+
+---
+
 ## 🗺️ Project Execution Roadmap
 
 - [x] **Phase 0: Workspace Setup, Git Repository Initialization & Hygiene**
 - [x] **Phase 1: Database Schema Modernization & Seed Data Engine**
 - [x] **Phase 2: Security, Authentication & Role-Based Access Control (RBAC)**
-- [ ] **Phase 3: Dynamic Product Catalog & Farmer Inventory Management**
+- [x] **Phase 3: Dynamic Product Catalog & Farmer Inventory Management**
 - [ ] **Phase 4: Real-Time Auction & Live Bidding Engine**
 - [ ] **Phase 5: Secure Order Processing, Cart & Financial Calculations**
 - [ ] **Phase 6: Admin Command Center, Revenue Analytics & Governance**

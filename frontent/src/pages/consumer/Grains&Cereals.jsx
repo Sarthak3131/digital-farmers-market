@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Star, Filter, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../routes/CartContext';
+import productService from '../../services/productService';
 
 // Import local images
 import quinoaImg from '../../assets/images/products/quinoa.jpg';
@@ -11,13 +12,43 @@ export default function GrainsAndCereals() {
   const navigate = useNavigate();
   const { addToCart } = useCart();
 
-  const products = [
+  const defaultGrains = [
     { id: 301, name: "Basmati Rice", price: 150, unit: "kg", img: "https://images.unsplash.com/photo-1586201375761-83865001e31c?q=80&w=600&auto=format&fit=crop", rating: 4.8 },
     { id: 302, name: "Whole Wheat Flour", price: 40, unit: "kg", img: "https://images.unsplash.com/photo-1509440159596-0249088772ff?q=80&w=600&auto=format&fit=crop", rating: 4.7 },
     { id: 303, name: "Organic Quinoa", price: 350, unit: "kg", img: quinoaImg, rating: 4.9 },
     { id: 304, name: "Corn Maize", price: 30, unit: "kg", img: "https://images.unsplash.com/photo-1551754655-cd27e38d2076?q=80&w=600&auto=format&fit=crop", rating: 4.5 },
     { id: 305, name: "Rolled Oats", price: 180, unit: "kg", img: oatsImg, rating: 4.6 },
   ];
+
+  const [products, setProducts] = useState(defaultGrains);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchGrains = async () => {
+      try {
+        const liveItems = await productService.getProducts({ category: "Grains" });
+        if (liveItems && liveItems.length > 0) {
+          const formatted = liveItems.map(item => ({
+            _id: item._id,
+            id: item._id,
+            name: item.name,
+            price: item.price,
+            unit: item.unit || "kg",
+            img: item.images?.[0] || "https://images.unsplash.com/photo-1586201375761-83865001e31c?q=80&w=600&auto=format&fit=crop",
+            rating: item.rating || 4.8,
+            stock: item.stock,
+            seller: item.seller?.name || "Local Farmer",
+          }));
+          setProducts(formatted);
+        }
+      } catch (err) {
+        console.warn("Using offline fallback grains", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchGrains();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#fffbeb] font-sans text-slate-800 pb-12">

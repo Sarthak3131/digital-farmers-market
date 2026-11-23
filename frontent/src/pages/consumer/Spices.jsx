@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Star, Filter, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../routes/CartContext';
+import productService from '../../services/productService';
 
 // Import local images
 import turmericImg from '../../assets/images/products/turmeric_powder.jpg';
@@ -16,7 +17,7 @@ export default function Spices() {
   const navigate = useNavigate();
   const { addToCart } = useCart();
 
-  const products = [
+  const defaultSpices = [
     { id: 501, name: "Turmeric Powder", price: 120, unit: "250g", img: turmericImg, rating: 4.8 },
     { id: 502, name: "Red Chilli Powder", price: 150, unit: "250g", img: chilliImg, rating: 4.9 },
     { id: 503, name: "Coriander Powder", price: 100, unit: "250g", img: corianderImg, rating: 4.7 },
@@ -24,6 +25,39 @@ export default function Spices() {
     { id: 505, name: "Black Pepper", price: 250, unit: "100g", img: pepperImg, rating: 5.0 },
     { id: 506, name: "Cardamom", price: 400, unit: "50g", img: cardamomImg, rating: 4.9 },
   ];
+
+  const [products, setProducts] = useState(defaultSpices);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSpices = async () => {
+      try {
+        const liveItems = await productService.getProducts({ category: "Spices" });
+        if (liveItems && liveItems.length > 0) {
+          const formatted = liveItems.map(item => {
+            const matchLocal = defaultSpices.find(p => p.name.toLowerCase().includes(item.name.toLowerCase().split(' ')[0]));
+            return {
+              _id: item._id,
+              id: item._id,
+              name: item.name,
+              price: item.price,
+              unit: item.unit || "pack",
+              img: item.images?.[0] || matchLocal?.img || turmericImg,
+              rating: item.rating || 4.8,
+              stock: item.stock,
+              seller: item.seller?.name || "Spice Plantation",
+            };
+          });
+          setProducts(formatted);
+        }
+      } catch (err) {
+        console.warn("Using offline fallback spices", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSpices();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#fff1f2] font-sans text-slate-800 pb-12">

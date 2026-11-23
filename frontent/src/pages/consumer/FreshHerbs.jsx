@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingCart, Star, Filter, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../../routes/CartContext';
+import productService from '../../services/productService';
 
 // Import local images
 import corianderImg from '../../assets/images/products/fresh_coriander.jpg';
@@ -16,7 +17,7 @@ export default function FreshHerbs() {
   const navigate = useNavigate();
   const { addToCart } = useCart();
 
-  const products = [
+  const defaultHerbs = [
     { id: 401, name: "Fresh Coriander", price: 20, unit: "bunch", img: corianderImg, rating: 4.8 },
     { id: 402, name: "Mint Leaves", price: 15, unit: "bunch", img: mintImg, rating: 4.7 },
     { id: 403, name: "Basil Leaves", price: 40, unit: "bunch", img: basilImg, rating: 4.9 },
@@ -24,6 +25,39 @@ export default function FreshHerbs() {
     { id: 405, name: "Rosemary", price: 60, unit: "bunch", img: rosemaryImg, rating: 5.0 },
     { id: 406, name: "Parsley", price: 50, unit: "bunch", img: parsleyImg, rating: 4.5 },
   ];
+
+  const [products, setProducts] = useState(defaultHerbs);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchHerbs = async () => {
+      try {
+        const liveItems = await productService.getProducts({ category: "Herbs" });
+        if (liveItems && liveItems.length > 0) {
+          const formatted = liveItems.map(item => {
+            const matchLocal = defaultHerbs.find(p => p.name.toLowerCase().includes(item.name.toLowerCase().split(' ')[0]));
+            return {
+              _id: item._id,
+              id: item._id,
+              name: item.name,
+              price: item.price,
+              unit: item.unit || "bunch",
+              img: item.images?.[0] || matchLocal?.img || corianderImg,
+              rating: item.rating || 4.8,
+              stock: item.stock,
+              seller: item.seller?.name || "Herb Garden",
+            };
+          });
+          setProducts(formatted);
+        }
+      } catch (err) {
+        console.warn("Using offline fallback herbs", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHerbs();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#ecfccb] font-sans text-slate-800 pb-12">
