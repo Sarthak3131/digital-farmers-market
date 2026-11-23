@@ -196,6 +196,18 @@ The platform enforces strict multi-layered security controls across both backend
 
 ---
 
+## 🛡️ Admin Command Center, Revenue Analytics & Governance
+
+- **Holistic Platform Intelligence**: Real-time aggregated command center metrics covering Gross Merchandise Volume (GMV), 2.5% platform commission, active farmers, verification queue, live auctions, and open disputes.
+- **7-Day Revenue Velocity**: Rolling daily fee analytics with zero-filled date continuity for predictive financial charts and intelligence briefs.
+- **Farmer KYC Verification Queue (`/admin/farmer-verification`)**: Structured workflow for administrators to review submitted farmer documentation (Land title, Aadhaar, Organic certificates), approve KYC, or issue structured rejections.
+- **User Governance & Self-Protection Guard**: Complete registry management (`/admin/users`) with role filters, keyword search, active status toggling, and hard security checks preventing administrator self-suspension or deletion.
+- **Dispute Mediation Center (`/admin/disputes`)**: Full arbitration workflow for consumer-producer disputes, tracking priority, mediation history, and formal resolution recording.
+- **Live Auction Monitor & Emergency Stops (`/admin/live`)**: Real-time WebSocket monitoring of high-stakes auctions with immediate administrator kill-switch intervention (`/api/admin/auctions/:id/stop`).
+- **Dynamic Platform Configuration (`/admin/config`)**: Runtime control over platform fee percentage, maintenance mode toggle, self-registration gating, and automated farmer approvals.
+
+---
+
 ## 🗺️ Project Execution Roadmap
 
 - [x] **Phase 0: Workspace Setup, Git Repository Initialization & Hygiene**
@@ -204,7 +216,7 @@ The platform enforces strict multi-layered security controls across both backend
 - [x] **Phase 3: Dynamic Product Catalog & Farmer Inventory Management**
 - [x] **Phase 4: Real-Time Auction & Live Bidding Engine**
 - [x] **Phase 5: Secure Order Processing, Cart & Financial Calculations**
-- [ ] **Phase 6: Admin Command Center, Revenue Analytics & Governance**
+- [x] **Phase 6: Admin Command Center, Revenue Analytics & Governance**
 - [ ] **Phase 7: Codebase Hygiene, UX Polish & Global Error Handling**
 - [ ] **Phase 8: Production Readiness, Containerization & Cloud Deployment**
 
