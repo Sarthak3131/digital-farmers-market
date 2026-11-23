@@ -23,10 +23,12 @@ export default function AdminConfig() {
         fetchConfig();
     }, []);
 
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
     const fetchConfig = async () => {
         try {
-            const token = localStorage.getItem('jwt');
-            const res = await fetch('http://localhost:5000/api/admin/config', {
+            const token = localStorage.getItem('token') || localStorage.getItem('jwt');
+            const res = await fetch(`${API_URL}/admin/config`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
@@ -51,8 +53,8 @@ export default function AdminConfig() {
     const handleSave = async () => {
         setLoading(true);
         try {
-            const token = localStorage.getItem('jwt');
-            const res = await fetch('http://localhost:5000/api/admin/config', {
+            const token = localStorage.getItem('token') || localStorage.getItem('jwt');
+            const res = await fetch(`${API_URL}/admin/config`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

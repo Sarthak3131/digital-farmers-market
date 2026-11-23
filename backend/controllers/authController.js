@@ -6,27 +6,41 @@ import { createNotification } from "./adminController.js";
 export const register = async (req, res) => {
   try {
     const { name, email, password, role } = req.body;
-    console.log("Registering user:", { name, email, role }); // Debug log
 
-    if (!name || !email || !password || !role) {
-      return res.status(400).json({ message: "All fields are required" });
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "Name, email, and password are required" });
     }
 
-    const userExists = await User.findOne({ email });
+    // Security: Prevent privilege escalation to admin via registration
+    const normalizedRole = role ? role.toLowerCase().trim() : "consumer";
+    if (normalizedRole === "admin" || !["consumer", "farmer"].includes(normalizedRole)) {
+      return res.status(400).json({
+        message: "Invalid role specified. Self-registration is restricted to consumer or farmer roles only."
+      });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const userExists = await User.findOne({ email: cleanEmail });
     if (userExists) {
-      return res.status(400).json({ message: "User already exists" });
+      return res.status(400).json({ message: "User already exists with this email" });
     }
 
     const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, password: hashed, role });
-
+    const user = await User.create({
+      name: name.trim(),
+      email: cleanEmail,
+      password: hashed,
+      role: normalizedRole,
+      isVerified: normalizedRole === "farmer" ? false : true,
+      isActive: true
+    });
 
     if (user) {
       // Notify Admin if Farmer Registers
-      if (role === 'farmer') {
+      if (normalizedRole === 'farmer') {
         const notif = await createNotification(
           "New Farmer Registration",
-          `Farmer ${name} has registered and awaits verification.`,
+          `Farmer ${user.name} has registered and awaits verification.`,
           "warning",
           "/admin/farmer-verification"
         );
@@ -34,7 +48,6 @@ export const register = async (req, res) => {
         const io = req.app.get("io");
         if (io && notif) {
           io.emit("admin_notification", notif);
-          // Also emit stats update if needed, but client polls or we can emit 'stats_update'
         }
       }
 
@@ -44,7 +57,9 @@ export const register = async (req, res) => {
           _id: user._id,
           name: user.name,
           email: user.email,
-          role: user.role
+          role: user.role,
+          isVerified: user.isVerified,
+          isActive: user.isActive
         }
       });
     } else {
@@ -52,17 +67,27 @@ export const register = async (req, res) => {
     }
   } catch (error) {
     console.error("Registration error:", error);
-    res.status(500).json({ message: "Server error" });
+    res.status(500).json({ message: error.message || "Server error" });
   }
 };
 
 export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
-    const user = await User.findOne({ email });
+
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email and password are required" });
+    }
+
+    const cleanEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: cleanEmail });
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    if (!user.isActive) {
+      return res.status(403).json({ message: "Your account has been deactivated. Please contact support." });
     }
 
     res.json({
@@ -71,11 +96,29 @@ export const login = async (req, res) => {
         _id: user._id,
         name: user.name,
         email: user.email,
-        role: user.role
+        role: user.role,
+        isVerified: user.isVerified,
+        isActive: user.isActive
       }
     });
   } catch (error) {
     console.error("Login error:", error);
+    res.status(500).json({ message: error.message || "Server error" });
+  }
+};
+
+// @desc    Get current user profile / verify session
+// @route   GET /api/auth/me
+// @access  Private
+export const getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select("-password");
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error("GetMe error:", error);
     res.status(500).json({ message: error.message || "Server error" });
   }
 };

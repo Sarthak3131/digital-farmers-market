@@ -32,14 +32,6 @@ export default function Signup() {
       color: "from-yellow-500 to-orange-700",
       redirect: "/farmer",
     },
-    {
-      id: "admin",
-      title: "Admin",
-      desc: "Platform Manager",
-      icon: <Shield className="w-6 h-6 text-white" />,
-      color: "from-blue-500 to-indigo-700",
-      redirect: "/admin",
-    },
   ];
 
   const handleInputChange = (e) => {

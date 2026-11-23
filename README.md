@@ -154,11 +154,23 @@ npm run seed
 
 ---
 
+## 🛡️ Security & Role-Based Access Control (RBAC)
+
+The platform enforces strict multi-layered security controls across both backend and frontend:
+
+- **Privilege Escalation Protection**: Public self-registration endpoints strictly disallow the `admin` role. All public signups are restricted to `consumer` or unverified `farmer`.
+- **Claims-Bearing JWTs**: JWT payloads encode both the verified `id` and `role`. Tokens are verified on every protected request.
+- **Account Suspension Enforcement**: Middleware checks `isActive` on every authenticated request, immediately cutting off deactivated users.
+- **Standardized Client Storage**: Unified JWT token storage under the `token` key across all consumer, farmer, and admin portals.
+- **React Route Guards**: All routes are guarded by `ProtectedRoute`, verifying authentication and ensuring strict role separation (`/admin/*`, `/farmer/*`, `/consumer/*`).
+
+---
+
 ## 🗺️ Project Execution Roadmap
 
 - [x] **Phase 0: Workspace Setup, Git Repository Initialization & Hygiene**
 - [x] **Phase 1: Database Schema Modernization & Seed Data Engine**
-- [ ] **Phase 2: Security, Authentication & Role-Based Access Control (RBAC)**
+- [x] **Phase 2: Security, Authentication & Role-Based Access Control (RBAC)**
 - [ ] **Phase 3: Dynamic Product Catalog & Farmer Inventory Management**
 - [ ] **Phase 4: Real-Time Auction & Live Bidding Engine**
 - [ ] **Phase 5: Secure Order Processing, Cart & Financial Calculations**

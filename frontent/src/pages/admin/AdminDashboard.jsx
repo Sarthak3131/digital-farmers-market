@@ -48,12 +48,15 @@ export default function AdminDashboard() {
   const [unreadCount, setUnreadCount] = useState(0);
 
 
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+  const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+
   useEffect(() => {
     fetchStats();
     fetchNotifications();
 
     // Socket Connection
-    const socket = io('http://localhost:5000');
+    const socket = io(SOCKET_URL);
 
     socket.on('connect', () => {
       console.log("Admin Dashboard Connected to Socket");
@@ -81,8 +84,8 @@ export default function AdminDashboard() {
 
   const fetchNotifications = async () => {
     try {
-      const token = localStorage.getItem('jwt');
-      const res = await fetch('http://localhost:5000/api/admin/notifications', {
+      const token = localStorage.getItem('token') || localStorage.getItem('jwt');
+      const res = await fetch(`${API_URL}/admin/notifications`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -98,8 +101,8 @@ export default function AdminDashboard() {
   const handleNotificationClick = async (notification) => {
     if (!notification.isRead) {
       try {
-        const token = localStorage.getItem('jwt');
-        await fetch(`http://localhost:5000/api/admin/notifications/${notification._id}/read`, {
+        const token = localStorage.getItem('token') || localStorage.getItem('jwt');
+        await fetch(`${API_URL}/admin/notifications/${notification._id}/read`, {
           method: 'PUT',
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -118,8 +121,8 @@ export default function AdminDashboard() {
 
   const fetchStats = async () => {
     try {
-      const token = localStorage.getItem('jwt'); // Assuming consistent token key
-      const res = await fetch('http://localhost:5000/api/admin/stats', {
+      const token = localStorage.getItem('token') || localStorage.getItem('jwt');
+      const res = await fetch(`${API_URL}/admin/stats`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();

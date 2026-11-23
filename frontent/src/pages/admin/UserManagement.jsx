@@ -19,15 +19,17 @@ export default function UserManagement() {
     fetchUsers();
   }, []);
 
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem('jwt');
+      const token = localStorage.getItem('token') || localStorage.getItem('jwt');
       if (!token) {
         setLoading(false);
         return;
       }
 
-      const res = await fetch('http://localhost:5000/api/admin/users', {
+      const res = await fetch(`${API_URL}/admin/users`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       const data = await res.json();
@@ -43,7 +45,7 @@ export default function UserManagement() {
 
   const handleStatusToggle = async (id, currentStatus) => {
     try {
-      const token = localStorage.getItem('jwt');
+      const token = localStorage.getItem('token') || localStorage.getItem('jwt');
       // Optimistic update
       setUsers(users.map(u => {
         if (u._id === id) {
@@ -52,7 +54,7 @@ export default function UserManagement() {
         return u;
       }));
 
-      await fetch(`http://localhost:5000/api/admin/users/${id}/status`, {
+      await fetch(`${API_URL}/admin/users/${id}/status`, {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -64,11 +66,11 @@ export default function UserManagement() {
   const handleDelete = async (id) => {
     if (confirm("Are you sure you want to delete this user? This action cannot be undone.")) {
       try {
-        const token = localStorage.getItem('jwt');
+        const token = localStorage.getItem('token') || localStorage.getItem('jwt');
         // Optimistic UI
         setUsers(users.filter(u => u._id !== id));
 
-        await fetch(`http://localhost:5000/api/admin/users/${id}`, {
+        await fetch(`${API_URL}/admin/users/${id}`, {
           method: 'DELETE',
           headers: { Authorization: `Bearer ${token}` }
         });

@@ -45,10 +45,12 @@ export default function AdminLiveMonitor() {
         };
     }, []);
 
+    const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
     const fetchAuctions = async () => {
         try {
-            const token = localStorage.getItem('jwt');
-            const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/auctions`, {
+            const token = localStorage.getItem('token') || localStorage.getItem('jwt');
+            const res = await fetch(`${API_URL}/auctions`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             const data = await res.json();
@@ -68,8 +70,8 @@ export default function AdminLiveMonitor() {
         if (!confirm("EMERGENCY STOP: Are you sure you want to forcibly end this auction?")) return;
 
         try {
-            const token = localStorage.getItem('jwt');
-            await fetch(`http://localhost:5000/api/admin/auctions/${id}/stop`, {
+            const token = localStorage.getItem('token') || localStorage.getItem('jwt');
+            await fetch(`${API_URL}/admin/auctions/${id}/stop`, {
                 method: 'PUT',
                 headers: { Authorization: `Bearer ${token}` }
             });

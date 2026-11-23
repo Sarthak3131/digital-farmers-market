@@ -10,27 +10,36 @@ export const protect = async (req, res, next) => {
   ) {
     try {
       token = req.headers.authorization.split(" ")[1];
-      if (token === "null" || token === "undefined") {
-        throw new Error("Token is null or undefined string");
+      if (!token || token === "null" || token === "undefined") {
+        return res.status(401).json({ message: "Not authorized, token is invalid" });
       }
+
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       req.user = await User.findById(decoded.id).select("-password");
-      next();
+
+      if (!req.user) {
+        return res.status(401).json({ message: "User not found or account deactivated" });
+      }
+
+      if (!req.user.isActive) {
+        return res.status(403).json({ message: "Account has been suspended or deactivated" });
+      }
+
+      return next();
     } catch (error) {
-      console.error(error);
-      res.status(401).json({ message: "Not authorized, token failed" });
+      console.error("Auth protect error:", error.message);
+      return res.status(401).json({ message: "Not authorized, token failed" });
     }
   }
 
   if (!token) {
-    res.status(401).json({ message: "Not authorized, no token" });
+    return res.status(401).json({ message: "Not authorized, no token provided" });
   }
 };
 
 export const admin = (req, res, next) => {
   if (req.user && req.user.role === "admin") {
-    next();
-  } else {
-    res.status(401).json({ message: "Not authorized as an admin" });
+    return next();
   }
+  return res.status(403).json({ message: "Access denied: Admin privileges required" });
 };

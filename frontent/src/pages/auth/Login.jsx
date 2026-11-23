@@ -54,13 +54,8 @@ export default function Login() {
     const result = await login(formData.email, formData.password);
 
     if (result.success) {
-      if (result.role !== role) {
-        setError(`Please login with a ${role} account (You logged in as ${result.role})`);
-        setLoading(false);
-        return;
-      }
-      const selectedRole = roles.find((r) => r.id === role);
-      navigate(selectedRole.redirect);
+      const targetRole = roles.find((r) => r.id === result.role);
+      navigate(targetRole ? targetRole.redirect : "/consumer/home");
     } else {
       setError(result.message || 'Login failed');
     }

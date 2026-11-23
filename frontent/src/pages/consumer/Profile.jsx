@@ -23,6 +23,7 @@ export default function Profile() {
   ];
   // Fetch Orders for Profile
   const [orders, setOrders] = useState([]);
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
   useEffect(() => {
     const fetchOrders = async () => {
@@ -30,7 +31,7 @@ export default function Profile() {
         const token = localStorage.getItem('token') || localStorage.getItem('jwt');
         if (!token) return;
 
-        const res = await fetch('http://localhost:5000/api/orders/my', {
+        const res = await fetch(`${API_URL}/orders/my`, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
